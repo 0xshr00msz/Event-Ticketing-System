@@ -3,6 +3,7 @@
 #include <string.h>
 
 FILE *fp;
+int x = 0;
 
 // Structures for Admin
 typedef struct Admin{
@@ -27,23 +28,112 @@ int adminMenu(){
     return choice;
 }
 
+int eventExists(char* eventName) {
+    Admin admin;
+    char line[200]; // Buffer to hold values of each line
+
+    fp = fopen("events/sampleDB.csv", "r");
+    if(fp == NULL){
+        printf("Failed to open file\n");
+        return 0;
+    }
+
+    while(fgets(line, sizeof(line), fp)){
+        sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
+        if(strcmp(admin.eventName, eventName) == 0){
+            fclose(fp);
+            system("cls");
+            printf("Event already exists\n");
+            return 0;
+        }
+    }
+
+    fclose(fp);
+    return 1;
+}
+
+void clearInputBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) { }
+}
+
+int validateDate(int month, int day, int year) {
+    x++;
+    if(month < 1 || month > 12) return -1;
+    if(day < 1 || day > 31) return -2;
+    if(year < 1900 || year > 2100) return -3;
+    return 1;
+}
+
+int validateTime(int hour, int min) {
+    x++;
+    if(hour < 0 || hour > 23) return -1;
+    if(min < 0 || min > 59) return -2;
+    return 1;
+}
+
 void createEvent(){
     Admin admin;
+    int dateValidationResult;
+    int timeValidationResult;
+
     fp = fopen("events/sampleDB.csv", "a+"); // Access CSV file
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
     }
-    printf("Enter Event Name: ");
-    scanf(" %[^\n]", admin.eventName);
+
+    do {
+        printf("Enter Event Name: ");
+        scanf(" %[^\n]", admin.eventName);
+        clearInputBuffer();
+    } while(!eventExists(admin.eventName));
+
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
-    printf("Enter Event Date (MM/DD/YYYY): ");
-    scanf("%d/%d/%d", &admin.month, &admin.day, &admin.year);
-    printf("Enter Event Start Time (HH:MM): ");
-    scanf("%d:%d", &admin.hour[0], &admin.min[0]);
-    printf("Enter Event End Time (HH:MM): ");
-    scanf("%d:%d", &admin.hour[1], &admin.min[1]);
+
+    x = 0;
+    do {
+        if (x != 0){
+            printf("\033[2A\33[2K");
+        }
+        printf("Enter Event Date (MM/DD/YYYY): ");
+        scanf("%d/%d/%d", &admin.month, &admin.day, &admin.year);
+        clearInputBuffer();
+        dateValidationResult = validateDate(admin.month, admin.day, admin.year);
+        if(dateValidationResult == -1) printf("Invalid month. Please try again.\n");
+        else if(dateValidationResult == -2) printf("Invalid day. Please try again.\n");
+        else if(dateValidationResult == -3) printf("Invalid year. Please try again.\n");
+    } while(dateValidationResult <= 0);
+
+    x = 0;
+    printf("\33[2K");
+    do {
+        if (x != 0){
+            printf("\033[2A\33[2K");
+        }
+        printf("Enter Event Start Time (HH:MM): ");
+        scanf("%d:%d", &admin.hour[0], &admin.min[0]);
+        clearInputBuffer();
+        timeValidationResult = validateTime(admin.hour[0], admin.min[0]);
+        if(timeValidationResult == -1) printf("Invalid hour. Please try again.\n");
+        else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
+    } while(timeValidationResult <= 0);
+
+    x = 0;
+    printf("\33[2K");
+    do {
+        if (x != 0){
+            printf("\033[2A\33[2K");
+        }
+        printf("Enter Event End Time (HH:MM): ");
+        scanf("%d:%d", &admin.hour[1], &admin.min[1]);
+        clearInputBuffer();
+        timeValidationResult = validateTime(admin.hour[1], admin.min[1]);
+        if(timeValidationResult == -1) printf("Invalid hour. Please try again.\n");
+        else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
+    } while(timeValidationResult <= 0);
+
     fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
     fclose(fp);
 }
