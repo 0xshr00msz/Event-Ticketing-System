@@ -28,11 +28,9 @@ int adminMenu(){
     return choice;
 }
 
-int eventExists(char* eventName) {
+int eventExists(FILE *fp, char* eventName) {
     Admin admin;
     char line[200]; // Buffer to hold values of each line
-
-    fp = fopen("events/sampleDB.csv", "r");
     if(fp == NULL){
         printf("Failed to open file\n");
         return 0;
@@ -47,8 +45,6 @@ int eventExists(char* eventName) {
             return 0;
         }
     }
-
-    fclose(fp);
     return 1;
 }
 
@@ -87,7 +83,7 @@ void createEvent(){
         printf("Enter Event Name: ");
         scanf(" %[^\n]", admin.eventName);
         clearInputBuffer();
-    } while(!eventExists(admin.eventName));
+    } while(!eventExists(fp, admin.eventName));
 
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
@@ -134,7 +130,13 @@ void createEvent(){
         else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
     } while(timeValidationResult <= 0);
 
-    fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
+    fflush(fp);
+    int check = fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
+    if(check < 0){
+        printf("Failed to write to file\n\n");  
+    } else { printf("Event created successfully\n\n"); }
+    
+    
     fclose(fp);
 }
 
@@ -225,6 +227,48 @@ void deleteEvent(){
     }
 }
 
+void editEvent(){
+    Admin admin;
+    char line[200]; // Buffer to hold each line
+    char eventName[50]; // Name of the event to edit
+    int eventNumber; // Number of the event to edit
+    int found = 0; // Indicator whether the event was found
+    int i = 0;
+
+    // Display all events with their numbers
+    fp = fopen("events/sampleDB.csv", "r");
+    if(fp == NULL){
+        printf("Failed to open file\n");
+        return;
+    }
+    while(fgets(line, sizeof(line), fp)){
+        sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
+        printf("%d. %s\n", ++i, admin.eventName);
+    }
+    fclose(fp);
+
+    // Ask the admin to enter either the name or the number of the event to edit
+    printf("Enter the name or the number of the event to edit: ");
+    if(scanf("%d", &eventNumber) == 1){
+        // The admin entered a number
+        fp = fopen("events/sampleDB.csv", "r");
+        FILE *temp = fopen("events/temp.csv", "w");
+        i = 0;
+        while(fgets(line, sizeof(line), fp)){
+        }
+    }else{
+        // The admin entered a name
+        scanf("%s", eventName);
+        while(fgets(line, sizeof(line), fp)){
+            if (strcmp(line, eventName) == 0){
+                found = 1;
+                break;
+            }
+            
+        }
+    }
+}
+
 // Main Admin Function
 void adminMain(){
     int choice;
@@ -246,6 +290,7 @@ void adminMain(){
                 break;
             case 4:
                 // Edit Event
+                editEvent();
                 break;
             case 5:
                 break;
