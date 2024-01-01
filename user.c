@@ -51,34 +51,63 @@ int displayEvents(){
 }
 
 int saveEvents(){
-    Admin admin;
-    User user;
     DIR *dir;
     struct dirent *entry;
-    int i = 0;
     char filename[256];
 
-    // Open the directory
-    dir = opendir("/eventholder");
+
+    // Open dir to read the csv of the Event
+    dir = opendir("events/");
     if (dir == NULL) {
         // Handle error
-        return;
+        perror("Error opening directory");
+        return EXIT_FAILURE;
+    }
+    const char *fileName = "eventholder/data.csv";
+
+    // Open the CSV file for events in read mode
+    FILE *file = fopen(filename, "r");
+
+    if (file == NULL) {
+        printf("Could not open file %s\n", fileName);
+        return 1;
     }
 
-    sprintf(filename, "/eventholder/%s.csv", admin.eventName);
+    // Scan the CSV file for the event name, so scan for the first element for each line
+    char buffer[1024];
+    while (fscanf(file, "%1023[^,],", buffer) == 1) {
+    printf("Read: %s\n", buffer);
+}
+
+
+    // Put them in an array to be made for each fileanme of the to-be-made csv
+    // using sprintf, create a filename for each event
+    // Create csv then put them in eventholder directory
+    // Open each CSV file in write mode
+    // Write all the user info in each event CSV file
+    // Close each CSV file
+
+    // Open the directory
+    dir = opendir("eventholder/");
+    if (dir == NULL) {
+        // Handle error
+        perror("Error opening directory");
+        return EXIT_FAILURE;
+    }
+    
+    sprintf(filename, "eventholder/%s.csv", "DenielDave");
 
     // Open the CSV file in write mode
-    FILE *file = fopen("/eventholder/admin.eventname", "w");
+    FILE *file = fopen(filename, "w");
     if (file == NULL) {
         // Handle error
         closedir(dir);
-        return;
+        return EXIT_FAILURE;
     }
 
-    // Write the header to the CSV file
-    fprintf(file, "Index, %s\n", admin.eventName);
 
     // Read directory entries
+    int i = 0;
     while((entry = readdir(dir)) != NULL){
         if(strcmp(entry->d_name,".") != 0 && strcmp(entry->d_name,"..") != 0){
             if(entry->d_type == DT_DIR){
@@ -95,18 +124,13 @@ int saveEvents(){
     // Close the directory
     closedir(dir);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int main(){
     // Display Events listed inside the events directory
-    displayEvents();
+    saveEvents();
+    // displayEvents();
 }
 
-int main(){
-
-    // Display Events listed inside the events directory
-    displayEvents();
-
-}
 
