@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <direct.h>
 
 FILE *fp;
 int x = 0;
@@ -72,8 +73,9 @@ void createEvent(){
     Admin admin;
     int dateValidationResult;
     int timeValidationResult;
+    char *urlName;
 
-    fp = fopen("events/sampleDB.csv", "a+"); // Access CSV file
+    fp = fopen("events/gen_info.csv", "a+");
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
@@ -84,6 +86,8 @@ void createEvent(){
         scanf(" %[^\n]", admin.eventName);
         clearInputBuffer();
     } while(!eventExists(fp, admin.eventName));
+
+    fclose(fp);
 
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
@@ -130,13 +134,50 @@ void createEvent(){
         else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
     } while(timeValidationResult <= 0);
 
+    urlName = strtok(admin.eventName, " ");
+    char buffer[256];
+    urlName = strtok(admin.eventName, " ");
+    char buffer[256];
+    sprintf(buffer, "/events/%s", urlName);
+    if(access("/events", F_OK) != -1) {
+        int dirCheck = mkdir(buffer, 0777);
+        if(dirCheck == 0) {
+            printf("Directory created successfully\n");
+        } else {
+            perror("Failed to create directory");
+        }
+    } else {
+        printf("/events directory does not exist\n");
+    }
+
+    char fileName[256];
+    sprintf(fileName, "%s/details.csv", buffer);
+
+    fp = fopen(fileName, "a+");
+    if(fp == NULL){
+        printf("Failed to open file\n");
+        return;
+    }
     fflush(fp);
-    int check = fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
-    if(check < 0){
-        printf("Failed to write to file\n\n");  
+    int writeCheck = fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
+    if(writeCheck < 0){
+        printf("Failed to write to file\n\n"); 
+        return;
+    }
+    fclose(fp);
+
+    fp = fopen("events/gen_info.csv", "a+");
+    if(fp == NULL){
+        printf("Failed to open file\n");
+        return;
+    }
+    fflush(fp);
+    writeCheck = fprintf(fp, "%s,%s\n", admin.eventName, urlName);
+    if (writeCheck < 0){
+        printf("Failed to write to file\n\n");
+        return;
     } else { printf("Event created successfully\n\n"); }
-    
-    
+
     fclose(fp);
 }
 
