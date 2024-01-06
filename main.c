@@ -32,19 +32,23 @@ int adminMenu(){
 int eventExists(FILE *fp, char* eventName) {
     Admin admin;
     char line[200]; // Buffer to hold values of each line
+
+    fp = fopen("Events.txt", "r");
     if(fp == NULL){
         printf("Failed to open file\n");
         return 0;
     }
 
     while(fgets(line, sizeof(line), fp)){
-        sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
+        line[strcspn(line, "\n")] = 0;
+        sscanf(line, "%s", admin.eventName);
         if(strcmp(admin.eventName, eventName) == 0){
             fclose(fp);
-            printf("Event already exists\n");
+            printf("\nEvent already exists\n\n");
             return 0;
         }
     }
+    fclose(fp);
     return 1;
 }
 
@@ -73,9 +77,20 @@ void createEvent(){
     int dateValidationResult;
     int timeValidationResult;
 
+    fp = fopen("Events.txt", "a+");
+    if(fp == NULL){
+        printf("Failed to open file\n");
+        return;
+    }
     system("cls");
-    printf("Enter Event Name: ");
-    scanf(" %[^\n]", admin.eventName);
+
+    do{
+        printf("Enter Event Name: ");
+        scanf(" %[^\n]", admin.eventName);
+        clearInputBuffer();
+    }while(!eventExists(fp, admin.eventName));
+    
+    fclose(fp);
 
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
