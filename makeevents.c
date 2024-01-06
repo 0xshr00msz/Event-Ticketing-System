@@ -58,10 +58,6 @@ int saveEvents() {
             return 1;
         }
 
-        
-
-        // Write data to the new file here
-
         fclose(newFile);
     }
 
