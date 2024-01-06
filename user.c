@@ -15,7 +15,7 @@ typedef struct User{
     char emailAddr[50];
 } User;
 
-void displayEvents(){
+int displayEvents(){
     DIR * dir;
     int i;
     struct dirent *entry;
@@ -40,13 +40,20 @@ void displayEvents(){
     }
     printf("0\tExit\n\n");
     closedir(dir);
+
+    return i;
 }
 
-int selectEvent(){
-    int eventNum;
-    printf("Select an event: ");
-    scanf("%d", &eventNum);
-    return eventNum;
+int selectEvent(int totalEvents){
+    while(1){
+        int eventNum;
+        printf("Select an event: ");
+        scanf("%d", &eventNum);
+        if(eventNum >= 0 && eventNum <= totalEvents){
+            return eventNum;
+        }
+        printf("\nInvalid input!\n\n");
+    }
 }
 
 void appendToFile(char *fileName, User *userDetails){
@@ -64,6 +71,20 @@ void appendToFile(char *fileName, User *userDetails){
         userDetails->mobileNum,
         userDetails->emailAddr
     );
+}
+
+int validateAge(){
+    int age;
+    while(1){
+        printf("Age: ");
+        scanf("%d", &age);
+        if(age >= 0 && age <= 120){
+            return age;
+        } else if (age > 120){
+            printf("\nWhat? Are you immortal?\n");
+        }
+        printf("\nInvalid input!\n\n");
+    }
 }
 
 void inputUserDetails(int choice){
@@ -91,8 +112,9 @@ void inputUserDetails(int choice){
         printf("Please enter your information:\n");
         printf("Name: ");
         scanf(" %[^\n]", newUser.name);
-        printf("Age: ");
-        scanf("%d", &newUser.age);
+        // printf("Age: ");
+        // scanf("%d", &newUser.age);
+        newUser.age = validateAge();
         printf("Sex (M/F): ");
         scanf(" %c", &newUser.sex);
         printf("Address: ");
@@ -112,8 +134,9 @@ void userMenu(){
     int flag = 1;
     int choice;
 
-    displayEvents();
-    choice = selectEvent();
+    int totalEvents = displayEvents();
+
+    choice = selectEvent(totalEvents);
     inputUserDetails(choice);
 }
 
