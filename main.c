@@ -139,7 +139,10 @@ void createEvent(){
         return;
     }
     fflush(fp);
-    int writeCheck = fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
+    fprintf(fp, "Event Name,Event Address,Event Date,Start Time,End Time\n");
+    int writeCheck = fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
+    fprintf(fp, "\nName,Age,Sex,Address,Mobile Number, Email Address");
+
     if(writeCheck < 0){
         printf("Failed to write to file\n\n"); 
         return;
