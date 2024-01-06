@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 
 FILE *fp;
 int x = 0;
+const char *workingDir = ".";
 
 // Structures for Admin
 typedef struct Admin{
@@ -21,7 +23,7 @@ int adminMenu(){
     printf("\t2. Delete Event\n");
     printf("\t3. View Event\n");
     printf("\t4. Update/Edit Event\n");
-    printf("\t5. Exit\n");
+    printf("\t0. Exit\n");
     printf("Enter your choice: ");
     scanf("%d", &choice);
     return choice;
@@ -71,7 +73,8 @@ void createEvent(){
     int dateValidationResult;
     int timeValidationResult;
 
-    fp = fopen("gen_info.csv", "a+");
+    system("cls");
+    fp = fopen("Events.txt", "a+");
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
@@ -149,17 +152,20 @@ void createEvent(){
     }
     fclose(fp);
 
-    fp = fopen("gen_info.csv", "a+");
+    fp = fopen("Events.txt", "a+");
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
     }
     fflush(fp);
-    writeCheck = fprintf(fp, "%s,%s\n", admin.eventName, admin.eventName);
+    writeCheck = fprintf(fp, "%s\n", admin.eventName);
     if (writeCheck < 0){
         printf("Failed to write to file\n\n");
         return;
-    } else { printf("Event created successfully\n\n"); }
+    } else { 
+        system("cls");
+        printf("Event created successfully\n\n"); 
+    }
 
     fclose(fp);
 }
@@ -195,8 +201,9 @@ void deleteEvent(){
     int found = 0; // Indicator whether the event was found
     int i = 0;
 
+    system("cls");
     // Display all events with their numbers
-    fp = fopen("gen_info.csv", "r");
+    fp = fopen("Events.txt", "r");
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
@@ -211,7 +218,32 @@ void deleteEvent(){
     printf("Enter the name or the number of the event to delete: ");
     if(scanf("%d", &eventNumber) == 1){
         // The admin entered a number
-        fp = fopen("gen_info.csv", "r");
+
+        DIR *dir;
+        int i;
+        struct dirent *entry;
+
+        dir = opendir(workingDir);
+        if(dir == NULL){
+            perror("Unable to open directory!");;
+            exit(EXIT_FAILURE);
+        }
+
+        i = 1;
+        while((entry = readdir(dir)) != NULL){
+            if(entry->d_type == DT_REG){
+                const char *dot = strrchr(entry->d_name, '.');
+                if(dot && strcmp(dot, ".csv") == 0){
+                    size_t length = dot - entry->d_name;
+                    // printf("%d\t%.*s\n", i, (int)length, entry->d_name);
+                    remove(entry->d_name);
+                    i++;
+                }
+            }
+        }
+        closedir(dir);
+
+        fp = fopen("Events.txt", "r");
         FILE *temp = fopen("temp.csv", "w");
         i = 0;
         while(fgets(line, sizeof(line), fp)){
@@ -226,7 +258,7 @@ void deleteEvent(){
     }else{
         // The admin entered a name
         scanf("%s", eventName);
-        fp = fopen("gen_info.csv", "r");
+        fp = fopen("Events.txt", "r");
         FILE *temp = fopen("temp.csv", "w");
         while(fgets(line, sizeof(line), fp)){
             sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
@@ -241,13 +273,13 @@ void deleteEvent(){
     }
 
     // Delete the old file and rename the temporary file
-    remove("gen_info.csv");
-    rename("temp.csv", "gen_info.csv");
-
+    remove("Events.txt");
+    rename("temp.csv", "Events.txt");
+    system("cls");
     if(found){
-        printf("Event deleted successfully\n");
+        printf("Event deleted successfully\n\n");
     }else{
-        printf("Event not found\n");
+        printf("Event not found\n\n");
     }
 }
 
@@ -297,6 +329,7 @@ void editEvent(){
 void adminMain(){
     int choice;
     do{
+        // system("cls");
         choice = adminMenu();
         switch(choice){
             case 1:
@@ -315,21 +348,21 @@ void adminMain(){
                 // Edit Event
                 editEvent();
                 break;
-            case 5:
+            case 0:
                 break;
             default:
                 printf("Invalid Choice\n");
         }
-    }while(choice != 5);
+    }while(choice != 0);
 }
 
 // Choose between Admin and User
 int chooseMode(){
     int choice;
-    printf("Choose Mode:\n");
+    printf("\nChoose Mode:\n");
     printf("\t1. Admin\n");
     printf("\t2. User\n");
-    printf("\t3. Exit\n");
+    printf("\t0. Exit\n");
     printf("Enter your choice: ");
     scanf("%d", &choice);
     return choice;
@@ -338,17 +371,20 @@ int chooseMode(){
 // Main Runtime Function
 int main(){
     int choice;
+    system("cls");
     do{
         choice = chooseMode();
         switch(choice){
             case 1:
                 // Admin
+                system("cls");
                 adminMain();
                 break;
             case 2:
                 // User
+                system("cls");
                 break;
-            case 3:
+            case 0:
                 // Exit
                 return 0;
                 break;
