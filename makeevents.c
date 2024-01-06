@@ -2,7 +2,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct User{
+    char eventName[50];
+    char name[50];
+    int age;
+    char sex;
+    char address[100];
+    char mobileNumber[12];   // 11 digit number + 1 for null terminator - 09xxxxxxxxx
+    char emailAddress[50];
+} User;
+
 int saveEvents() {
+
     const char *fileName = "events/sampleDB.csv";
 
     // Create the directory if it doesn't exist
@@ -46,6 +57,8 @@ int saveEvents() {
             printf("Could not create file %s\n", filenames[i]);
             return 1;
         }
+
+        
 
         // Write data to the new file here
 
