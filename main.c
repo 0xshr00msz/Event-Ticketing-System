@@ -74,19 +74,8 @@ void createEvent(){
     int timeValidationResult;
 
     system("cls");
-    fp = fopen("Events.txt", "a+");
-    if(fp == NULL){
-        printf("Failed to open file\n");
-        return;
-    }
-
-    do {
-        printf("Enter Event Name: ");
-        scanf(" %[^\n]", admin.eventName);
-        clearInputBuffer();
-    } while(!eventExists(fp, admin.eventName));
-
-    fclose(fp);
+    printf("Enter Event Name: ");
+    scanf(" %[^\n]", admin.eventName);
 
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
@@ -172,25 +161,57 @@ void createEvent(){
 
 void viewEvent(){
     Admin admin;
-    char line[200]; // Buffer to hold values of each line
+    char line[250], eventName[100][100]; // Buffer to hold values of each line
+    int countEvents = 0, choice, firstLine = 1; // Number of events
 
-    fp = fopen("gen_info.csv", "r");
+    fp = fopen("Events.txt", "r");
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
     }
 
+    printf("Events:\n");
     while(fgets(line, sizeof(line), fp)){
-        sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
-        printf("Event Name: %s\n", admin.eventName);
-        printf("Event Address: %s\n", admin.eventAddress);
-        printf("Event Date: %02d/%02d/%d\n", admin.month, admin.day, admin.year);
-        printf("Event Start Time: %02d:%02d\n", admin.hour[0], admin.min[0]);
-        printf("Event End Time: %02d:%02d\n", admin.hour[1], admin.min[1]);
+        sscanf(line, "%[^,]", admin.eventName);
+        admin.eventName[strcspn(admin.eventName, "\n")] = 0;
+        printf("\t%d. %s", (countEvents + 1), admin.eventName);
         printf("\n");
+        strcpy(eventName[countEvents], admin.eventName);
+        countEvents++;
     }
 
     fclose(fp);
+
+    printf("\t%d. Exit\nEnter Option: ", (countEvents + 1));
+    scanf("%d", &choice);
+    if(choice == (countEvents + 1)){
+        return;
+    }
+
+    for(int x = 0; x < countEvents; x++){
+        if(x == (choice - 1)){
+            char fileName[256];
+            sprintf(fileName, "%s.csv", eventName[x]);
+            fp = fopen(fileName, "r");
+            while(fgets(line, sizeof(line), fp)){
+                if(firstLine){
+                    firstLine = 0;
+                    continue;
+                }
+                else {
+                    sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
+                    printf("Event Name: %s\n", admin.eventName);
+                    printf("Event Address: %s\n", admin.eventAddress);
+                    printf("Event Date: %d/%d/%d\n", admin.month, admin.day, admin.year);
+                    printf("Event Start Time: %d:%d\n", admin.hour[0], admin.min[0]);
+                    printf("Event End Time: %d:%d\n", admin.hour[1], admin.min[1]);
+                    break;
+                }
+            }
+            fclose(fp);
+            break;
+        }
+    }
 }
 
 void deleteEvent(){
