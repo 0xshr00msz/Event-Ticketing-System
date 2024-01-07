@@ -292,6 +292,7 @@ void deleteEvent(){
                     size_t length = dot - entry->d_name;
                     // printf("%d\t%.*s\n", i, (int)length, entry->d_name);
                     remove(entry->d_name);
+                    break;
                     i++;
                 }
             }
@@ -299,7 +300,7 @@ void deleteEvent(){
         closedir(dir);
 
         fp = fopen("Events.txt", "r");
-        FILE *temp = fopen("temp.csv", "w");
+        FILE *temp = fopen("temp.txt", "w");
         i = 0;
         while(fgets(line, sizeof(line), fp)){
             if(++i == eventNumber){
@@ -314,7 +315,7 @@ void deleteEvent(){
         // The admin entered a name
         scanf("%s", eventName);
         fp = fopen("Events.txt", "r");
-        FILE *temp = fopen("temp.csv", "w");
+        FILE *temp = fopen("temp.txt", "w");
         while(fgets(line, sizeof(line), fp)){
             sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
             if(strcmp(admin.eventName, eventName) == 0){
@@ -329,7 +330,7 @@ void deleteEvent(){
 
     // Delete the old file and rename the temporary file
     remove("Events.txt");
-    rename("temp.csv", "Events.txt");
+    rename("temp.txt", "Events.txt");
     system("cls");
     if(found){
         printf("Event deleted successfully\n\n");
