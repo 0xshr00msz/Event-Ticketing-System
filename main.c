@@ -8,7 +8,7 @@
 FILE *fp;
 int x = 0;
 const char *workingDir = "eventholder/";
-DIR * dir;
+DIR *dir;
 
 // Structures for Admin
 typedef struct Admin{
@@ -46,7 +46,7 @@ int eventExists(FILE *fp, char* eventName) {
     Admin admin;
     char line[200]; // Buffer to hold values of each line
 
-    fp = fopen("Events.txt", "r");
+    // fp = fopen("Events.txt", "r");
     if(fp == NULL){
         printf("Failed to open file\n");
         return 0;
@@ -91,9 +91,10 @@ void createEvent(){
     int timeValidationResult;
 
     chdir(workingDir);
+    // opendir(workingDir);
 
-    fp = fopen("Events.txt", "a+");
-    if(fp == NULL){
+    FILE *eventsFile = fopen("Events.txt", "a+");
+    if(eventsFile == NULL){
         printf("Failed to open file\n");
         return;
     }
@@ -103,9 +104,9 @@ void createEvent(){
         printf("Enter Event Name: ");
         scanf(" %[^\n]", admin.eventName);
         clearInputBuffer();
-    }while(!eventExists(fp, admin.eventName));
+    }while(!eventExists(eventsFile, admin.eventName));
     
-    fclose(fp);
+    fclose(eventsFile);
 
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
@@ -169,15 +170,19 @@ void createEvent(){
         printf("Failed to write to file\n\n"); 
         return;
     }
-    fclose(fp);
+    if(fclose(fp) != 0){
+        printf("Failed to close %s\n", fileName);
+        return;
+    }
 
-    fp = fopen("Events.txt", "a+");
-    if(fp == NULL){
+    eventsFile = fopen("Events.txt", "a+");
+    if(eventsFile == NULL){
         printf("Failed to open file\n");
         return;
     }
-    fflush(fp);
-    writeCheck = fprintf(fp, "%s\n", admin.eventName);
+    fflush(eventsFile);
+    writeCheck = fprintf(eventsFile, "%s\n", admin.eventName);
+    fclose(eventsFile);
     if (writeCheck < 0){
         printf("Failed to write to file\n\n");
         return;
@@ -186,7 +191,6 @@ void createEvent(){
         printf("Event created successfully\n\n"); 
     }
 
-    fclose(fp);
 }
 
 void viewEvent(){
@@ -232,7 +236,7 @@ void viewEvent(){
                 }
                 else {
                     sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
-                    printf("Event Name: %s\n", admin.eventName);
+                    printf("\nEvent Name: %s\n", admin.eventName);
                     printf("Event Address: %s\n", admin.eventAddress);
                     printf("Event Date: %d/%d/%d\n", admin.month, admin.day, admin.year);
                     printf("Event Start Time: %d:%d\n", admin.hour[0], admin.min[0]);
@@ -339,7 +343,7 @@ void deleteEvent(){
     }
 }
 
-void editEvent(){
+void editEvent() {
     Admin admin;
     char line[200]; // Buffer to hold each line
     char eventName[50]; // Name of the event to edit
@@ -348,14 +352,20 @@ void editEvent(){
     int i = 0;
 
     chdir(workingDir);
+    dir = opendir(".");
+    if(dir == NULL){
+        perror("Unable to open directory!");;
+        exit(EXIT_FAILURE);
+    }
 
     // Display all events with their numbers
     fp = fopen("Events.txt", "r");
-    if(fp == NULL){
+    if (fp == NULL) {
         printf("Failed to open file\n");
         return;
     }
-    while(fgets(line, sizeof(line), fp)){
+
+    while (fgets(line, sizeof(line), fp)) {
         sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
         printf("%d. %s\n", ++i, admin.eventName);
     }
@@ -363,24 +373,101 @@ void editEvent(){
 
     // Ask the admin to enter either the name or the number of the event to edit
     printf("Enter the name or the number of the event to edit: ");
-    if(scanf("%d", &eventNumber) == 1){
+
+    if (scanf("%d", &eventNumber) == 1) {
         // The admin entered a number
+        struct dirent *entry;
+        i = 1;
+
+        while((entry = readdir(dir)) != NULL){
+            if(entry->d_type == DT_REG){
+                const char *dot = strrchr(entry->d_name, '.');
+                if(dot && strcmp(dot, ".csv") == 0){
+                    size_t length = dot - entry->d_name;
+                    // printf("%d\t%.*s\n", i, (int)length, entry->d_name);
+                    char csvFileName[100];
+                    sprintf(csvFileName, "%.*s.csv", (int)length, entry->d_name);
+
+                    // Open the CSV file
+                    FILE *csvFile = fopen(csvFileName, "r+");
+                    if(csvFile == NULL){
+                        perror("Unable to open .csv file!");
+                        exit(EXIT_FAILURE);
+                    }
+                    fgets(line, sizeof(line), csvFile); // Skip the first line of csv
+                    // Read the existing details from the .csv file
+                    fgets(line, sizeof(line), csvFile);
+                    sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
+                    fclose(csvFile);
+
+                    // Prompt the user for new details
+                    printf("Enter new event details:\n");
+                    printf("Event Name: ");
+                    scanf(" %[^\n]", admin.eventName);
+                    printf("Event Address: ");
+                    scanf(" %[^\n]", admin.eventAddress);
+
+                    // Move the file pointer to the beginning of the second line
+                    fseek(csvFile, strlen(line) * -1, SEEK_CUR);
+
+                    // Write the new details to the .csv file
+                    fprintf(csvFile, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
+                    fclose(csvFile);
+                    fclose(csvFile);
+                    found = 1;
+                    break;
+                    // i++;
+                }
+            }
+        }
+        
         fp = fopen("Events.txt", "r");
-        FILE *temp = fopen("temp.csv", "w");
+        FILE *temp = fopen("temp.txt", "w");
         i = 0;
         while(fgets(line, sizeof(line), fp)){
+            if(++i == eventNumber){
+                found = 1;
+            }else{
+                fprintf(temp, "%s", line);
+            }
         }
-    }else{
+        fclose(fp);
+        fclose(temp);
+    } else {
         // The admin entered a name
-        scanf("%s", eventName);
-        while(fgets(line, sizeof(line), fp)){
-            if (strcmp(line, eventName) == 0){
+        fp = fopen("Events.txt", "r");
+
+        while (fgets(line, sizeof(line), fp)) {
+            if (strstr(line, eventName) != NULL) {
                 found = 1;
                 break;
             }
-            
         }
+
+        if (found) {
+            // Modify the event details as needed
+            // For example, you can prompt the admin to enter new details
+
+            printf("Enter new event details:\n");
+            printf("Event Name: ");
+            scanf("%s", admin.eventName);
+            printf("Event Address: ");
+            scanf("%s", admin.eventAddress);
+
+            // Update the line with the modified details
+            fclose(fp);
+
+            char csvFileName[100];
+            sprintf(csvFileName, "%s.csv", admin.eventName);
+            fp = fopen(csvFileName, "w");
+            fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
+        } else {
+            printf("Event not found\n");
+        }
+
+        fclose(fp);
     }
+    closedir(dir);
 }
 
 // Main Admin Function
@@ -484,7 +571,6 @@ void appendToFile(char *fileName, User *userDetails){
     if(dot != NULL){
         *dot = '\0';  // Remove the .csv extension
     }
-
     FILE *file = fopen(fileName, "a+");
     if(file == NULL){
         printf("Unable to open file!");
@@ -732,13 +818,13 @@ void userMenu(){
 // Main Runtime Function
 int main(){
     int choice;
-    system("cls");
+    // system("cls");
     do{
         choice = chooseMode();
         switch(choice){
             case 1:
                 // Admin
-                system("cls");
+                // system("cls");
                 adminMain();
                 break;
             case 2:
