@@ -346,18 +346,11 @@ void deleteEvent(){
 
 void editEvent() {
     Admin admin;
-    char line[200]; // Buffer to hold each line
+    char line[300]; // Buffer to hold each line
     char eventName[50]; // Name of the event to edit
     int eventNumber; // Number of the event to edit
     int found = 0; // Indicator whether the event was found
-    int i = 0;
-
-    chdir(workingDir);
-    dir = opendir(".");
-    if(dir == NULL){
-        perror("Unable to open directory!");;
-        exit(EXIT_FAILURE);
-    }
+    int i;
 
     // Display all events with their numbers
     fp = fopen("Events.txt", "r");
@@ -365,20 +358,26 @@ void editEvent() {
         printf("Failed to open file\n");
         return;
     }
-
+    i = 0;
     while (fgets(line, sizeof(line), fp)) {
         sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
         printf("%d. %s\n", ++i, admin.eventName);
     }
     fclose(fp);
 
+    
     // Ask the admin to enter either the name or the number of the event to edit
     printf("Enter the name or the number of the event to edit: ");
-
+    chdir(workingDir);
     if (scanf("%d", &eventNumber) == 1) {
         // The admin entered a number
         struct dirent *entry;
         i = 1;
+        dir = opendir(".");
+        if(dir == NULL){
+            perror("Unable to open directory!");;
+            exit(EXIT_FAILURE);
+        }
 
         while((entry = readdir(dir)) != NULL){
             if(entry->d_type == DT_REG){
@@ -389,51 +388,51 @@ void editEvent() {
                     char csvFileName[100];
                     sprintf(csvFileName, "%.*s.csv", (int)length, entry->d_name);
 
-                    // Open the CSV file
-                    FILE *csvFile = fopen(csvFileName, "r+");
+                    // Open the CSV file as read
+                    FILE *csvFile = fopen(csvFileName, "r");
                     if(csvFile == NULL){
                         perror("Unable to open .csv file!");
                         exit(EXIT_FAILURE);
                     }
-                    fgets(line, sizeof(line), csvFile); // Skip the first line of csv
-                    // Read the existing details from the .csv file
-                    fgets(line, sizeof(line), csvFile);
-                    sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
+                    FILE *temp = fopen("temp.csv", "w");
+                    if(temp == NULL){
+                        perror("Unable to open temp.csv file!");
+                        exit(EXIT_FAILURE);
+                    }
+                    i = 0;
+                    while(fgets(line, sizeof(line), csvFile)){
+                        if (i == 1) {
+                            // Replace the 2nd row with input details
+                            sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
+                            printf("Enter new details for the event:\n");
+                            printf("Event Name: ");
+                            scanf("%s", admin.eventName);
+                            printf("Event Address: ");
+                            scanf("%s", admin.eventAddress);
+                            printf("Date (MM/DD/YYYY): ");
+                            scanf("%d/%d/%d", &admin.month, &admin.day, &admin.year);
+                            printf("Start Time (HH:MM): ");
+                            scanf("%d:%d", &admin.hour[0], &admin.min[0]);
+                            printf("End Time (HH:MM): ");
+                            scanf("%d:%d", &admin.hour[1], &admin.min[1]);
+                            fprintf(temp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
+                        } else {
+                            // Copy other lines unchanged
+                            fprintf(temp, "%s", line);
+                        }
+                        i++;
+                    }
                     fclose(csvFile);
+                    fclose(temp);
 
-                    // Prompt the user for new details
-                    printf("Enter new event details:\n");
-                    printf("Event Name: ");
-                    scanf(" %[^\n]", admin.eventName);
-                    printf("Event Address: ");
-                    scanf(" %[^\n]", admin.eventAddress);
-
-                    // Move the file pointer to the beginning of the second line
-                    fseek(csvFile, strlen(line) * -1, SEEK_CUR);
-
-                    // Write the new details to the .csv file
-                    fprintf(csvFile, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
-                    fclose(csvFile);
-                    fclose(csvFile);
+                    remove(csvFileName);
+                    rename("temp.csv", csvFileName);
                     found = 1;
                     break;
                     // i++;
                 }
             }
         }
-        
-        fp = fopen("Events.txt", "r");
-        FILE *temp = fopen("temp.txt", "w");
-        i = 0;
-        while(fgets(line, sizeof(line), fp)){
-            if(++i == eventNumber){
-                found = 1;
-            }else{
-                fprintf(temp, "%s", line);
-            }
-        }
-        fclose(fp);
-        fclose(temp);
     } else {
         // The admin entered a name
         fp = fopen("Events.txt", "r");
