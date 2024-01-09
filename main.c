@@ -198,7 +198,6 @@ void viewEvent(){
     Admin admin;
     char line[250], eventName[100][100]; // Buffer to hold values of each line
     int countEvents = 0, choice, firstLine = 1; // Number of events
-    chdir(workingDir);
 
     fp = fopen("Events.txt", "r");
     if(fp == NULL){
@@ -217,7 +216,7 @@ void viewEvent(){
     }
 
     fclose(fp);
-
+    chdir(workingDir);
     printf("\t%d. Exit\nEnter Option: ", (countEvents + 1));
     scanf("%d", &choice);
     if(choice == (countEvents + 1)){
@@ -350,7 +349,7 @@ void editEvent() {
     char eventName[50]; // Name of the event to edit
     int eventNumber; // Number of the event to edit
     int found = 0; // Indicator whether the event was found
-    int i;
+    int i, x, dateValidationResult, timeValidationResult;
 
     // Display all events with their numbers
     fp = fopen("Events.txt", "r");
@@ -406,15 +405,50 @@ void editEvent() {
                             sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
                             printf("Enter new details for the event:\n");
                             printf("Event Name: ");
-                            scanf("%s", admin.eventName);
+                            scanf(" %[^\n]", admin.eventName);
                             printf("Event Address: ");
-                            scanf("%s", admin.eventAddress);
-                            printf("Date (MM/DD/YYYY): ");
-                            scanf("%d/%d/%d", &admin.month, &admin.day, &admin.year);
-                            printf("Start Time (HH:MM): ");
-                            scanf("%d:%d", &admin.hour[0], &admin.min[0]);
-                            printf("End Time (HH:MM): ");
-                            scanf("%d:%d", &admin.hour[1], &admin.min[1]);
+                            scanf(" %[^\n]", admin.eventAddress);
+                            x = 0;
+                            do {
+                                if (x != 0){
+                                    printf("\033[2A\33[2K");
+                                }
+                                printf("Enter Event Date (MM/DD/YYYY): ");
+                                scanf("%d/%d/%d", &admin.month, &admin.day, &admin.year);
+                                clearInputBuffer();
+                                dateValidationResult = validateDate(admin.month, admin.day, admin.year);
+                                if(dateValidationResult == -1) printf("Invalid month. Please try again.\n");
+                                else if(dateValidationResult == -2) printf("Invalid day. Please try again.\n");
+                                else if(dateValidationResult == -3) printf("Invalid year. Please try again.\n");
+                            } while(dateValidationResult <= 0);
+
+                            x = 0;
+                            printf("\33[2K");
+                            do {
+                                if (x != 0){
+                                    printf("\033[2A\33[2K");
+                                }
+                                printf("Enter Event Start Time (HH:MM): ");
+                                scanf("%d:%d", &admin.hour[0], &admin.min[0]);
+                                clearInputBuffer();
+                                timeValidationResult = validateTime(admin.hour[0], admin.min[0]);
+                                if(timeValidationResult == -1) printf("Invalid hour. Please try again.\n");
+                                else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
+                            } while(timeValidationResult <= 0);
+
+                            x = 0;
+                            printf("\33[2K");
+                            do {
+                                if (x != 0){
+                                    printf("\033[2A\33[2K");
+                                }
+                                printf("Enter Event End Time (HH:MM): ");
+                                scanf("%d:%d", &admin.hour[1], &admin.min[1]);
+                                clearInputBuffer();
+                                timeValidationResult = validateTime(admin.hour[1], admin.min[1]);
+                                if(timeValidationResult == -1) printf("Invalid hour. Please try again.\n");
+                                else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
+                            } while(timeValidationResult <= 0);
                             fprintf(temp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
                         } else {
                             // Copy other lines unchanged
