@@ -89,8 +89,6 @@ void createEvent(){
     Admin admin;
     int dateValidationResult;
     int timeValidationResult;
-
-    chdir(workingDir);
     // opendir(workingDir);
 
     FILE *eventsFile = fopen("Events.txt", "a+");
@@ -105,7 +103,6 @@ void createEvent(){
         scanf(" %[^\n]", admin.eventName);
         clearInputBuffer();
     }while(!eventExists(eventsFile, admin.eventName));
-    
     fclose(eventsFile);
 
     printf("Enter Event Address: ");
@@ -153,6 +150,8 @@ void createEvent(){
         else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
     } while(timeValidationResult <= 0);
 
+    chdir(workingDir);
+
     char fileName[256];
     sprintf(fileName, "%s.csv", admin.eventName);
 
@@ -174,6 +173,8 @@ void createEvent(){
         printf("Failed to close %s\n", fileName);
         return;
     }
+
+    chdir("..");
 
     eventsFile = fopen("Events.txt", "a+");
     if(eventsFile == NULL){
