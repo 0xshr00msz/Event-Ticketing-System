@@ -185,11 +185,11 @@ void createEvent(){
     Admin admin;
     int dateValidationResult;
     int timeValidationResult;
-    // Open or create the "Events.txt" file for appending and reading.
-    FILE *eventsFile = fopen("Events.txt", "a+");
-    if(eventsFile == NULL){
-        printf("Failed to open file\n");
-        return;
+
+    dir = opendir(workingDir);
+    if(dir == NULL){
+        perror("Unable to open folder");
+        exit(1);
     }
     system("cls");
     // Loop to ensure a unique event name by checking against existing events in "Events.txt".
@@ -198,7 +198,6 @@ void createEvent(){
         scanf(" %[^\n]", admin.eventName);
         clearInputBuffer();
     }while(!eventExists(admin.eventName));
-    fclose(eventsFile);     // Closes the "Events.txt" file after checking.
 
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
@@ -250,7 +249,6 @@ void createEvent(){
         if(timeValidationResult == -1) printf("Invalid hour. Please try again.\n");
         else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
     } while(timeValidationResult <= 0);
-    chdir(workingDir);      // Change the working directory to the "eventholder/" where the events are contained
 
     // Create a CSV file named after the event and open it for appending and reading.
     char fileName[256];
@@ -277,17 +275,6 @@ void createEvent(){
         printf("Failed to close %s\n", fileName);
         return;
     }
-    chdir("..");        // Go back to root directory
-     // Open the "Events.txt" file for appending and writing.
-    eventsFile = fopen("Events.txt", "a+");
-    if(eventsFile == NULL){
-        printf("Failed to open file\n");
-        return;
-    }
-    fflush(eventsFile);
-    writeCheck = fprintf(eventsFile, "%s\n", admin.eventName);
-    fclose(eventsFile);
-
     // Write the event name to the "Events.txt" file.
     if (writeCheck < 0){
         printf("Failed to write to file\n\n");
