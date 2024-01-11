@@ -11,6 +11,7 @@ FILE *fp;                                           // Universal file pointer va
 int x = 0;
 const char *workingDir = "eventholder/";            // Directory for the events  
 DIR *dir;                                           // Universal directory pointer variable
+char *filenames[MAX_FILES];
 
 // Structures for Admin
 typedef struct Admin{
@@ -115,7 +116,7 @@ int adminMenu(){
 
 int eventExists(char* eventName) {
    struct dirent *entry;
-   char *filenames[MAX_FILES];
+   
    int numFiles = 0;
 
    dir = opendir(workingDir);
@@ -253,6 +254,7 @@ void createEvent(){
     // Create a CSV file named after the event and open it for appending and reading.
     char fileName[256];
     sprintf(fileName, "%s.csv", admin.eventName);
+    chdir(workingDir);
     fp = fopen(fileName, "a+");
     if(fp == NULL){
         printf("Failed to open file\n");
@@ -283,6 +285,7 @@ void createEvent(){
         system("cls");
         printf("Event created successfully\n\n"); 
     }
+    chdir("..");
 }
 
 void viewEvent(){
