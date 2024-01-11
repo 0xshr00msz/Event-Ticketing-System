@@ -26,6 +26,8 @@ The Event Ticketing System in C is a console-based application designed to facil
   ```bash
   git clone https://github.com/yldevier/Event-Ticketing-System.git
 ```
+Install GCC version 6.3.0
+
 Compile the Source Code:
 ``` bash
 gcc main.c -o main
