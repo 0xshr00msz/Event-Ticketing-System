@@ -36,7 +36,6 @@ int chooseMode();
 // Function Prototypes - ADMIN
 void adminMain();
 int adminMenu();
-// int eventExists(FILE *fp, char *eventName);
 int eventExists(char *eventName);
 void clearInputBuffer();
 int validateDate(int month, int day, int year);
@@ -114,29 +113,6 @@ int adminMenu(){
     return choice;
 }
 
-// This function checks if an event already exists in the file that lists all available events
-// int eventExists(FILE *fp, char* eventName) {
-//     Admin admin;
-//     char line[200]; // Buffer to hold values of each line
-//     // Checks if the file exists
-//     if(fp == NULL){
-//         printf("Failed to open file\n");
-//         return 0;
-//     }
-//     // Read each line from the file
-//     while(fgets(line, sizeof(line), fp)){
-//         line[strcspn(line, "\n")] = 0;                  // Remove new line character
-//         sscanf(line, "%s", admin.eventName);            // Extract event name
-//         // Compare event names
-//         if(strcmp(admin.eventName, eventName) == 0){
-//             printf("\nEvent already exists\n\n");
-//             fclose(fp);
-//             return 0;   // returns 0 if event is found
-//         }
-//     }
-//     return 1;   // returns 1 if event is not found
-// }
-
 int eventExists(char* eventName) {
    struct dirent *entry;
    char *filenames[MAX_FILES];
@@ -176,7 +152,6 @@ int eventExists(char* eventName) {
             return 0;
         }
     }
-
     // Free the memory allocated for the file names
     for(int i = 0; i < numFiles; i++){
         free(filenames[i]);
@@ -321,7 +296,6 @@ void createEvent(){
         system("cls");
         printf("Event created successfully\n\n"); 
     }
-    
 }
 
 void viewEvent(){
