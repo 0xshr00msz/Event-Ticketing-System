@@ -252,7 +252,7 @@ void createEvent(){
         printf("Failed to close %s\n", fileName);
         return;
     }
-    
+    chdir("..");        // Go back to root directory
      // Open the "Events.txt" file for appending and writing.
     eventsFile = fopen("Events.txt", "a+");
     if(eventsFile == NULL){
@@ -271,7 +271,7 @@ void createEvent(){
         system("cls");
         printf("Event created successfully\n\n"); 
     }
-    chdir("..");        // Go back to root directory
+    
 }
 
 void viewEvent(){
@@ -335,6 +335,7 @@ void viewEvent(){
             break;  // Exit the loop after displaying details for the selected event
         }
     }
+    chdir("..");
 }
 
 void deleteEvent(){
