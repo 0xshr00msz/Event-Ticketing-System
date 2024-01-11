@@ -5,6 +5,8 @@
 #include<time.h>
 #include<ctype.h>
 
+#define MAX_FILES 200
+
 FILE *fp;                                           // Universal file pointer variable       
 int x = 0;
 const char *workingDir = "eventholder/";            // Directory for the events  
@@ -34,7 +36,8 @@ int chooseMode();
 // Function Prototypes - ADMIN
 void adminMain();
 int adminMenu();
-int eventExists(FILE *fp, char *eventName);
+// int eventExists(FILE *fp, char *eventName);
+int eventExists(char *eventName);
 void clearInputBuffer();
 int validateDate(int month, int day, int year);
 int validateTime(int hour, int min);
@@ -112,27 +115,73 @@ int adminMenu(){
 }
 
 // This function checks if an event already exists in the file that lists all available events
-int eventExists(FILE *fp, char* eventName) {
-    Admin admin;
-    char line[200]; // Buffer to hold values of each line
-    // Checks if the file exists
-    if(fp == NULL){
-        printf("Failed to open file\n");
-        return 0;
+// int eventExists(FILE *fp, char* eventName) {
+//     Admin admin;
+//     char line[200]; // Buffer to hold values of each line
+//     // Checks if the file exists
+//     if(fp == NULL){
+//         printf("Failed to open file\n");
+//         return 0;
+//     }
+//     // Read each line from the file
+//     while(fgets(line, sizeof(line), fp)){
+//         line[strcspn(line, "\n")] = 0;                  // Remove new line character
+//         sscanf(line, "%s", admin.eventName);            // Extract event name
+//         // Compare event names
+//         if(strcmp(admin.eventName, eventName) == 0){
+//             printf("\nEvent already exists\n\n");
+//             fclose(fp);
+//             return 0;   // returns 0 if event is found
+//         }
+//     }
+//     return 1;   // returns 1 if event is not found
+// }
+
+int eventExists(char* eventName) {
+   struct dirent *entry;
+   char *filenames[MAX_FILES];
+   int numFiles = 0;
+
+   dir = opendir(workingDir);
+   if(dir == NULL){
+        perror("Unable to open folder");
+        return 1;
     }
-    // Read each line from the file
-    while(fgets(line, sizeof(line), fp)){
-        line[strcspn(line, "\n")] = 0;                  // Remove new line character
-        sscanf(line, "%s", admin.eventName);            // Extract event name
-        // Compare event names
-        if(strcmp(admin.eventName, eventName) == 0){
-            fclose(fp);
-            printf("\nEvent already exists\n\n");
-            return 0;   // returns 0 if event is found
+
+    // 2. Read all the file name of the .csv files
+    while((entry = readdir(dir)) != NULL){
+        if(entry->d_type == DT_REG){
+            const char *dot = strrchr(entry->d_name, '.');
+            if(dot && strcmp(dot, ".csv") == 0){
+                // 3. Store them in an array
+                size_t length = dot - entry->d_name;
+                char *filenameWithoutExtension = malloc(length + 1);
+                strncpy(filenameWithoutExtension, entry->d_name, length);
+                filenameWithoutExtension[length] = '\0'; // Null-terminate the string
+                filenames[numFiles] = filenameWithoutExtension;
+                numFiles++;
+                if(numFiles >= MAX_FILES){
+                    printf("Too many files!\n");
+                    break;
+                }
+            }
         }
     }
-    fclose(fp);
-    return 1;   // returns 1 if event is not found
+    closedir(dir);
+
+    // 4. Compare to user input
+    for(int i = 0; i < numFiles; i++){
+        if(strcmp(filenames[i], eventName) == 0){
+            printf("File found!\n");
+            return 0;
+        }
+    }
+
+    // Free the memory allocated for the file names
+    for(int i = 0; i < numFiles; i++){
+        free(filenames[i]);
+    }
+    return 1;
 }
 
 // This function clears the input buffer by reading and discarding characters until a newline or EOF is encountered.
@@ -173,8 +222,9 @@ void createEvent(){
         printf("Enter Event Name: ");
         scanf(" %[^\n]", admin.eventName);
         clearInputBuffer();
-    }while(!eventExists(eventsFile, admin.eventName));
+    }while(!eventExists(admin.eventName));
     fclose(eventsFile);     // Closes the "Events.txt" file after checking.
+
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
 
@@ -363,7 +413,7 @@ void deleteEvent(){
     fclose(fp);
 
     // Ask the admin to enter either the name or the number of the event to delete
-    printf("Enter the name or the number of the event to delete: ");
+    printf("Enter the number of the event to delete: ");
     if(scanf("%d", &eventNumber) == 1){
         // The admin entered a number
         DIR *dir;
@@ -409,20 +459,7 @@ void deleteEvent(){
         remove("Events.txt");
         rename("temp.txt", "Events.txt");
     }else{
-        // The admin entered a name
-        scanf("%s", eventName);
-        fp = fopen("Events.txt", "r");
-        FILE *temp = fopen("temp.txt", "w");
-        while(fgets(line, sizeof(line), fp)){
-            sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
-            if(strcmp(admin.eventName, eventName) == 0){
-                found = 1;
-            }else{
-                fprintf(temp, "%s", line);
-            }
-        }
-        fclose(fp);
-        fclose(temp);
+        found = 0;
     }
     
     system("cls");
@@ -437,6 +474,7 @@ void editEvent() {
     Admin admin;
     char line[300]; // Buffer to hold each line
     char eventName[50]; // Name of the event to edit
+    char newFileName[100];
     int eventNumber; // Number of the event to edit
     int found = 0; // Indicator whether the event was found
     int i, x, dateValidationResult, timeValidationResult;
@@ -455,7 +493,7 @@ void editEvent() {
     fclose(fp);
 
     // Ask the admin to enter either the name or the number of the event to edit
-    printf("Enter the name or the number of the event to edit: ");
+    printf("Enter the number of the event to edit: ");
     chdir(workingDir);
     if (scanf("%d", &eventNumber) == 1) {
         // The admin entered a number
@@ -550,7 +588,8 @@ void editEvent() {
                     fclose(temp);
 
                     remove(csvFileName);
-                    rename("temp.csv", csvFileName);
+                    snprintf(newFileName, sizeof(newFileName), "%s.csv", admin.eventName);
+                    rename("temp.csv", newFileName);
                     found = 1;
                     break;
                     // i++;
@@ -672,6 +711,7 @@ void displayEvents(){
     }
     printf("0\tExit\n\n");    // Display the option to exit
     closedir(dir);
+
 }
 // This function returns the value of the chosen event
 int selectEvent(){
