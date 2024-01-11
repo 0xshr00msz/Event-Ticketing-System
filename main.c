@@ -6,6 +6,8 @@
 #include<ctype.h>
 
 #define MAX_FILES 200
+#define MAX_LINE 100
+#define MAX_COL 100
 
 FILE *fp;                                           // Universal file pointer variable       
 int x = 0;
@@ -58,7 +60,8 @@ int isValidAddress(char *address);
 int isvalidEmailAddr(char *emailAddr);
 void inputUserDetails(int choice);
 int getUserChoice();
-
+int ticketfilter();
+void filterArray(char arr[MAX_FILES][MAX_LINE], int size, char *filter);
 // Main Runtime Function
 int main(){
     int choice;
@@ -69,7 +72,7 @@ int main(){
         switch(choice){
             case 1:
                 // Admin
-                // system("cls");
+                system("cls");
                 adminMain();
                 break;
             case 2:
@@ -91,24 +94,38 @@ int main(){
 // Choose between Admin and User
 int chooseMode(){
     int choice;
-    printf("\nChoose Mode:\n");
-    printf("\t1. Admin\n");
-    printf("\t2. User\n");
-    printf("\t0. Exit\n");
+    char password[50];
+    char correctPassword[] = "admin"; // Replace with your actual password
+
+    system("cls");
+    printf("Choose Mode:\n");
+    printf("\t[1] Admin\n");
+    printf("\t[2] User\n");
+    printf("\t[0] Exit\n");
     printf("Enter your choice: ");
     scanf("%d", &choice);
+    
+    if(choice == 1) {
+        printf("Enter password: ");
+        scanf("%s", password);
+        if(strcmp(password, correctPassword) != 0) {
+            printf("Incorrect password. Please try again.\n");
+            return -1;
+        }
+    }
     return choice;
 }
 // Control Functions for Admin
 // Admin Menu for Admin section of the program - returns the value of choice of the admin user
-int adminMenu(){
+int adminMenu() {
     int choice;
     printf("Admin Menu:\n");
-    printf("\t1. Create Event\n");
-    printf("\t2. Delete Event\n");
-    printf("\t3. View Event\n");
-    printf("\t4. Update/Edit Event\n");
-    printf("\t0. Exit\n");
+    printf("\t[1] Create Event\n");
+    printf("\t[2] Delete Event\n");
+    printf("\t[3] View Event\n");
+    printf("\t[4] Update/Edit Event\n");
+    printf("\t[5] Ticket Filter\n");
+    printf("\t[0] Exit\n");
     printf("Enter your choice: ");
     scanf("%d", &choice);
     return choice;
@@ -194,6 +211,7 @@ void createEvent(){
     }
     system("cls");
     // Loop to ensure a unique event name by checking against existing events in "Events.txt".
+    printf("Creating an Event:\n");
     do{
         printf("Enter Event Name: ");
         scanf(" %[^\n]", admin.eventName);
@@ -317,7 +335,7 @@ void viewEvent(){
             }
         }
     }
-    printf("0\tExit\n\n");
+    printf("\t[0] Exit\n");
     closedir(dir);
     printf("Enter Option: ");
     scanf("%d", &choice);
@@ -382,7 +400,6 @@ void deleteEvent(){
     int found = 0; // Indicator whether the event was found
     int i = 0;
 
-    system("cls"); 
     struct dirent *entry;
 
     // Open the directory
@@ -391,19 +408,19 @@ void deleteEvent(){
             perror("Unable to open directory!");
             return;
         }
-
-        printf("\nEvents that are accessible:\n\n");
+        system("cls"); 
+        printf("Events that are accessible:\n");
         while((entry = readdir(dir)) != NULL){
             if(entry->d_type == DT_REG){
                 const char *dot = strrchr(entry->d_name, '.');
                 if(dot && strcmp(dot, ".csv") == 0){
                     size_t length = dot - entry->d_name;
-                    printf("%d\t%.*s\n", i + 1, (int)length, entry->d_name);
+                    printf("\t[%d] %.*s\n", i + 1, (int)length, entry->d_name);
                     i++;
                 }
             }
         }
-        printf("0\tExit\n\n");
+        printf("\t[0] Exit\n");
         closedir(dir);
 
         printf("Enter the number of the event to delete: ");
@@ -458,24 +475,32 @@ void editEvent() {
     int i, x, dateValidationResult, timeValidationResult;
     struct dirent *entryx;
     int b = 0;
-
     dir = opendir(workingDir);
-
+    if(dir == NULL){
+        perror("Unable to open directory!");
+        return;
+    }
+    system("cls");
+    printf("Events that are accessible:\n");
     while((entryx = readdir(dir)) != NULL){
         if(entryx->d_type == DT_REG){
             const char *dot = strrchr(entryx->d_name, '.');
             if(dot && strcmp(dot, ".csv") == 0){
                 size_t length = dot - entryx->d_name;
-                printf("%d\t%.*s\n", b + 1, (int)length, entryx->d_name);
+                printf("\t[%d] %.*s\n", b + 1, (int)length, entryx->d_name);
                 b++;
             }
         }
     }
+    printf("\t[0] Exit\n");
 
     // Ask the admin to enter either the name or the number of the event to edit
     printf("Enter the number of the event to edit: ");
-    chdir(workingDir);
     if (scanf("%d", &eventNumber) == 1) {
+        // If user entered 0, exit the function
+        if (eventNumber == 0) {
+            return;
+        }
         // The admin entered a number
         struct dirent *entry;
         i = 1;
@@ -578,15 +603,6 @@ void editEvent() {
         }
     } else {
         // The admin entered a name
-        fp = fopen("Events.txt", "r");
-
-        while (fgets(line, sizeof(line), fp)) {
-            if (strstr(line, eventName) != NULL) {
-                found = 1;
-                break;
-            }
-        }
-
         if (found) {
             // Modify the event details as needed
             // For example, you can prompt the admin to enter new details
@@ -611,10 +627,8 @@ void editEvent() {
         } else {
             printf("Event not found\n");
         }
-
         fclose(fp);
     }
-    closedir(dir);
 }
 
 // Main Admin Function
@@ -640,6 +654,10 @@ void adminMain(){
                 // Edit Event
                 editEvent();
                 break;
+            case 5:
+                // Edit Event
+                ticketfilter();
+                break;
             case 0:
                 break;
             default:
@@ -647,6 +665,118 @@ void adminMain(){
         }
     }while(choice != 0);
 }
+
+void filterArray(char arr[MAX_FILES][MAX_LINE], int size, char *filter) {
+    int found = 0;
+    for(int i = 0; i < size; i++) {
+        char temp[MAX_LINE];
+        // Remove newline character from the line
+        if(arr[i][strlen(arr[i]) - 1] == '\n') {
+            arr[i][strlen(arr[i]) - 1] = '\0';
+        }
+        strcpy(temp, arr[i]);
+        char *token = strtok(temp, ",");
+        int colCount = 0;
+        char *columns[7];
+        while(token != NULL) {
+            columns[colCount] = token;
+            colCount++;
+            token = strtok(NULL, ",");
+        }
+        if(colCount == 7 && strcmp(columns[6], filter) == 0) {
+            found = 1;
+            printf("\033[H\033[J");
+            printf("\nParticipant details:\n");
+            printf("Name: %s\n", columns[0]);
+            printf("Age: %s\n", columns[1]);
+            printf("Gender: %s\n", columns[2]);
+            printf("Address: %s\n", columns[3]);
+            printf("Phone: %s\n", columns[4]);
+            printf("Email: %s\n", columns[5]);
+            printf("ID: %s\n", columns[6]);
+        }
+    }
+    if(!found) {
+        printf("\nNo participant found with the given ticket code.\n");
+    }
+}
+
+int ticketfilter() {
+    DIR *d;
+    struct dirent *dir;
+    char filenames[MAX_FILES][MAX_COL];
+    char data[MAX_FILES][MAX_LINE];
+    char filter[MAX_COL];
+    int i = 0, choice;
+
+    d = opendir("eventholder");
+    system("cls");
+    printf("Select an event that you want to filter based on their ticked code:\n");
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if(dir->d_type == DT_REG) {
+                char filenameCopy[MAX_LINE];
+                strcpy(filenameCopy, dir->d_name);
+                char *token = strtok(filenameCopy, ".");
+                printf("\t[%d] %s\n", i+1, token);
+                strcpy(filenames[i], dir->d_name);
+                i++;
+            }
+        }
+        printf("\t[0] Exit\n");
+        closedir(d);
+    }
+
+    printf("Choose an event: ");
+    scanf("%d", &choice);
+    if (choice == 0) {
+        return 0;
+    }
+    choice--; // Adjust for 0-indexing
+
+    char path[128] = "eventholder/";
+    strcat(path, filenames[choice]);
+
+    int dataCount = 0;
+    FILE *file = fopen(path, "r");
+    if(file != NULL) {
+        char line[MAX_LINE];
+        int lineCount = 0;
+        while(fgets(line, sizeof(line), file)) {
+            lineCount++;
+            if(lineCount >= 5) {
+                strcpy(data[dataCount], line);
+                dataCount++;
+            }
+        }
+        fclose(file);
+    }
+
+    int continueFiltering;
+    do {
+        printf("Enter ticket code: ");
+        scanf("%s", filter);
+        filterArray(data, dataCount, filter);
+        do {
+            printf("\nDo you want to continue filtering? (1/0): ");
+            scanf("%d", &continueFiltering);
+            clearInputBuffer();
+            if(continueFiltering != 1 && continueFiltering != 0) {
+                printf("Invalid input. Please enter 1 or 0.\n");
+            }
+        } while(continueFiltering != 1 && continueFiltering != 0);
+
+        if (continueFiltering == 1)
+        {
+            printf("\033[H\033[J");
+        }
+        
+    } while(continueFiltering == 1);
+    return 0;
+}
+
+
+
 
 // Control Functions for User
 // User Menu
@@ -672,13 +802,14 @@ void displayEvents(){
     int i;
     struct dirent *entry;
 
+    system("cls");
     // Open the directory
     dir = opendir(workingDir); 
     if(dir == NULL){
         perror("Unable to open directory!");;
         exit(EXIT_FAILURE);
     }
-    printf("\nEvents that are accessible:\n\n", workingDir);
+    printf("Events that are accessible:\n", workingDir);
     i = 1;
     // Loop through directory entries
     while((entry = readdir(dir)) != NULL){
@@ -688,12 +819,12 @@ void displayEvents(){
             if(dot && strcmp(dot, ".csv") == 0){
                 size_t length = dot - entry->d_name;
                 // Print the file name without the extension
-                printf("%d\t%.*s\n", i, (int)length, entry->d_name);
+                printf("\t[%d] %.*s\n", i, (int)length, entry->d_name);
                 i++;
             }
         }
     }
-    printf("0\tExit\n\n");    // Display the option to exit
+    printf("\t[0] Exit\n");    // Display the option to exit
     closedir(dir);
 
 }
@@ -746,11 +877,11 @@ void appendToFile(char *fileName, User *userDetails){
     );
     // Flush the file buffer to ensure immediate write
     fflush(file);
-    printf("\nSuccessfully appended to file\n");
+    printf("\nParticipant is successfully registered.\n");
     fclose(file);
 
     // Generate a receipt file in the 'receipts' directory
-    sprintf(fileName, "receipts/%s.txt", userDetails->name);
+    sprintf(fileName, "receipts/%s_Event-%s.txt", userDetails->name, eventName);
     file = fopen(fileName, "w");
 
     // Write the user and event details to the receipt file
@@ -832,11 +963,11 @@ void inputUserDetails(int choice){
             }
         }
         closedir(dir);
-
+        system("cls");
         User newUser;
         while (reEnter == 1)
         {
-            printf("\nPlease enter your information:\n");
+            printf("Please enter your information:\n");
             int x = 0;
             do {
                 if (x != 0){
