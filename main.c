@@ -381,9 +381,11 @@ void deleteEvent(){
             if(entry->d_type == DT_REG){
                 const char *dot = strrchr(entry->d_name, '.');
                 if(dot && strcmp(dot, ".csv") == 0){
-                    size_t length = dot - entry->d_name;
-                    remove(entry->d_name);
-                    break;
+                    if(i == eventNumber){
+                        size_t length = dot - entry->d_name;
+                        remove(entry->d_name);
+                        break;
+                    }
                     i++;
                 }
             }
