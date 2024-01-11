@@ -5,30 +5,88 @@
 #include<time.h>
 #include<ctype.h>
 
-FILE *fp;
+FILE *fp;                                           // Universal file pointer variable       
 int x = 0;
-const char *workingDir = "eventholder/";
-DIR *dir;
+const char *workingDir = "eventholder/";            // Directory for the events  
+DIR *dir;                                           // Universal directory pointer variable
 
 // Structures for Admin
 typedef struct Admin{
     char eventName[50];
     char eventAddress[100];
     int month, day, year;       // Format: MM/DD/YYYY
-    int hour[2], min[2]; // Format : HH:MM
+    int hour[2], min[2];        // Format : HH:MM
 } Admin;
 
+// Structures of Users
 typedef struct User{
     char name[50];
-    int age;
-    char sex;           
-    char address[100];
+    int age;                    // Age of the User
+    char sex;                   // Sex of the User
+    char address[100];          // Address of the User
     char mobileNum[12];         // 11 Digit number + 1 for null terminator
-    char emailAddr[50];
-    char code[8];
+    char emailAddr[50];         // User Email Address
+    char code[8];               // Receipt Code
 } User;
 
+// FUNCTION PROTOTYPES
+int chooseMode();
+// Function Prototypes - ADMIN
+void adminMain();
+int adminMenu();
+int eventExists(FILE *fp, char *eventName);
+void clearInputBuffer();
+int validateDate(int month, int day, int year);
+int validateTime(int hour, int min);
+void createEvent();
+void viewEvent();
+void deleteEvent();
+void editEvent();
+// Function Prototypes - USER
+void userMenu();
+void displayEvents();
+int selectEvent();
+void generateCode(char *buffer);
+void appendToFile(char *fileName, User *userDetails);
+int isValidName(char *name);
+int isValidAge(int age);
+int isValidSex(char sex);
+int isValidAddress(char *address);
+int isvalidEmailAddr(char *emailAddr);
+void inputUserDetails(int choice);
+int getUserChoice();
+
+// Main Runtime Function
+int main(){
+    int choice;
+    // system("cls");
+    do{
+        choice = chooseMode();
+        switch(choice){
+            case 1:
+                // Admin
+                // system("cls");
+                adminMain();
+                break;
+            case 2:
+                // User
+                system("cls");
+                userMenu();
+                break;
+            case 0:
+                // Exit
+                return 0;
+                break;
+            default:
+                printf("Invalid Choice\n");
+        }
+    }while(choice != 3);
+
+    return 0;
+}
+
 // Control Functions for Admin
+// Admin Menu for Admin section of the program - returns the value of choice of the admin user
 int adminMenu(){
     int choice;
     printf("Admin Menu:\n");
@@ -42,11 +100,11 @@ int adminMenu(){
     return choice;
 }
 
+// This function checks if an event already exists in the file that lists all available events
 int eventExists(FILE *fp, char* eventName) {
     Admin admin;
     char line[200]; // Buffer to hold values of each line
 
-    // fp = fopen("Events.txt", "r");
     if(fp == NULL){
         printf("Failed to open file\n");
         return 0;
@@ -65,11 +123,13 @@ int eventExists(FILE *fp, char* eventName) {
     return 1;
 }
 
+// This function clears the input buffer by reading and discarding characters until a newline or EOF is encountered.
 void clearInputBuffer() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) { }
 }
-
+// Validates the given month, day, and year values. Returns 1 if valid,
+// -1 for an invalid month, -2 for an invalid day, and -3 for an invalid year.
 int validateDate(int month, int day, int year) {
     x++;
     if(month < 1 || month > 12) return -1;
@@ -77,37 +137,37 @@ int validateDate(int month, int day, int year) {
     if(year < 1900 || year > 2100) return -3;
     return 1;
 }
-
+// Validates the given hour and minute values. Returns 1 if valid, -1 for invalid hour, and -2 for invalid minute.
 int validateTime(int hour, int min) {
     x++;
     if(hour < 0 || hour > 23) return -1;
     if(min < 0 || min > 59) return -2;
     return 1;
 }
-
+// This function is for admin users who wants to create an event
 void createEvent(){
     Admin admin;
     int dateValidationResult;
     int timeValidationResult;
-    // opendir(workingDir);
-
+    // Open or create the "Events.txt" file for appending and reading.
     FILE *eventsFile = fopen("Events.txt", "a+");
     if(eventsFile == NULL){
         printf("Failed to open file\n");
         return;
     }
     system("cls");
-
+    // Loop to ensure a unique event name by checking against existing events in "Events.txt".
     do{
         printf("Enter Event Name: ");
         scanf(" %[^\n]", admin.eventName);
         clearInputBuffer();
     }while(!eventExists(eventsFile, admin.eventName));
-    fclose(eventsFile);
-
+    fclose(eventsFile);     // Closes the "Events.txt" file after checking.
     printf("Enter Event Address: ");
     scanf(" %[^\n]", admin.eventAddress);
 
+    // Input and validate event date using a loop.
+    // Display error messages for invalid month, day, or year.
     x = 0;
     do {
         if (x != 0){
@@ -122,6 +182,8 @@ void createEvent(){
         else if(dateValidationResult == -3) printf("Invalid year. Please try again.\n");
     } while(dateValidationResult <= 0);
 
+    // Input and validate event start time using a loop.
+    // Display error messages for invalid hour or minute.
     x = 0;
     printf("\33[2K");
     do {
@@ -136,6 +198,8 @@ void createEvent(){
         else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
     } while(timeValidationResult <= 0);
 
+    // Input and validate event end time using a loop.
+    // Display error messages for invalid hour or minute.
     x = 0;
     printf("\33[2K");
     do {
@@ -149,33 +213,35 @@ void createEvent(){
         if(timeValidationResult == -1) printf("Invalid hour. Please try again.\n");
         else if(timeValidationResult == -2) printf("Invalid minute. Please try again.\n");
     } while(timeValidationResult <= 0);
+    chdir(workingDir);      // Change the working directory to the "eventholder/" where the events are contained
 
-    chdir(workingDir);
-
+    // Create a CSV file named after the event and open it for appending and reading.
     char fileName[256];
     sprintf(fileName, "%s.csv", admin.eventName);
-
     fp = fopen(fileName, "a+");
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
     }
     fflush(fp);
+
+    // Write header and event details to the CSV file.
     fprintf(fp, "Event Name,Event Address,Event Date,Start Time,End Time\n");
     int writeCheck = fprintf(fp, "%s,%s,%d/%d/%d,%d:%d,%d:%d\n", admin.eventName, admin.eventAddress, admin.month, admin.day, admin.year, admin.hour[0], admin.min[0], admin.hour[1], admin.min[1]);
     fprintf(fp, "\nName,Age,Sex,Address,Mobile Number, Email Address");
 
+    // Check if writing to the file was successful.
     if(writeCheck < 0){
         printf("Failed to write to file\n\n"); 
         return;
     }
+    // Close the CSV file.
     if(fclose(fp) != 0){
         printf("Failed to close %s\n", fileName);
         return;
     }
-
-    chdir("..");
-
+    chdir("..");        // Go back to root directory
+     // Open the "Events.txt" file for appending and writing.
     eventsFile = fopen("Events.txt", "a+");
     if(eventsFile == NULL){
         printf("Failed to open file\n");
@@ -184,6 +250,8 @@ void createEvent(){
     fflush(eventsFile);
     writeCheck = fprintf(eventsFile, "%s\n", admin.eventName);
     fclose(eventsFile);
+
+    // Write the event name to the "Events.txt" file.
     if (writeCheck < 0){
         printf("Failed to write to file\n\n");
         return;
@@ -849,31 +917,3 @@ void userMenu(){
     } while (again == 1);
 }
 
-// Main Runtime Function
-int main(){
-    int choice;
-    // system("cls");
-    do{
-        choice = chooseMode();
-        switch(choice){
-            case 1:
-                // Admin
-                // system("cls");
-                adminMain();
-                break;
-            case 2:
-                // User
-                system("cls");
-                userMenu();
-                break;
-            case 0:
-                // Exit
-                return 0;
-                break;
-            default:
-                printf("Invalid Choice\n");
-        }
-    }while(choice != 3);
-
-    return 0;
-}
