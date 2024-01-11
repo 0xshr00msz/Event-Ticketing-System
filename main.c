@@ -475,12 +475,9 @@ void editEvent() {
     int i, x, dateValidationResult, timeValidationResult;
     struct dirent *entryx;
     int b = 0;
-    dir = opendir(workingDir);
-    if(dir == NULL){
-        perror("Unable to open directory!");
-        return;
-    }
+
     system("cls");
+    dir = opendir(workingDir);
     printf("Events that are accessible:\n");
     while((entryx = readdir(dir)) != NULL){
         if(entryx->d_type == DT_REG){
@@ -496,8 +493,8 @@ void editEvent() {
 
     // Ask the admin to enter either the name or the number of the event to edit
     printf("Enter the number of the event to edit: ");
+    chdir(workingDir);
     if (scanf("%d", &eventNumber) == 1) {
-        // If user entered 0, exit the function
         if (eventNumber == 0) {
             return;
         }
@@ -627,8 +624,10 @@ void editEvent() {
         } else {
             printf("Event not found\n");
         }
+
         fclose(fp);
     }
+    closedir(dir);
 }
 
 // Main Admin Function
