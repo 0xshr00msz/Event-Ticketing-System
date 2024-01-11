@@ -61,6 +61,7 @@ int main(){
     int choice;
     // system("cls");
     do{
+        // Get user choice through chooseMode() function
         choice = chooseMode();
         switch(choice){
             case 1:
@@ -81,10 +82,20 @@ int main(){
                 printf("Invalid Choice\n");
         }
     }while(choice != 3);
-
     return 0;
 }
 
+// Choose between Admin and User
+int chooseMode(){
+    int choice;
+    printf("\nChoose Mode:\n");
+    printf("\t1. Admin\n");
+    printf("\t2. User\n");
+    printf("\t0. Exit\n");
+    printf("Enter your choice: ");
+    scanf("%d", &choice);
+    return choice;
+}
 // Control Functions for Admin
 // Admin Menu for Admin section of the program - returns the value of choice of the admin user
 int adminMenu(){
@@ -104,23 +115,24 @@ int adminMenu(){
 int eventExists(FILE *fp, char* eventName) {
     Admin admin;
     char line[200]; // Buffer to hold values of each line
-
+    // Checks if the file exists
     if(fp == NULL){
         printf("Failed to open file\n");
         return 0;
     }
-
+    // Read each line from the file
     while(fgets(line, sizeof(line), fp)){
-        line[strcspn(line, "\n")] = 0;
-        sscanf(line, "%s", admin.eventName);
+        line[strcspn(line, "\n")] = 0;                  // Remove new line character
+        sscanf(line, "%s", admin.eventName);            // Extract event name
+        // Compare event names
         if(strcmp(admin.eventName, eventName) == 0){
             fclose(fp);
             printf("\nEvent already exists\n\n");
-            return 0;
+            return 0;   // returns 0 if event is found
         }
     }
     fclose(fp);
-    return 1;
+    return 1;   // returns 1 if event is not found
 }
 
 // This function clears the input buffer by reading and discarding characters until a newline or EOF is encountered.
@@ -264,14 +276,17 @@ void createEvent(){
 
 void viewEvent(){
     Admin admin;
-    char line[250], eventName[100][100]; // Buffer to hold values of each line
-    int countEvents = 0, choice, firstLine = 1; // Number of events
-
+    char line[250], eventName[100][100]; // Buffer to hold values of each line and array to store event names
+    int countEvents = 0, choice, firstLine = 1; // Initialize variables for event count, user choice, and first line flag
+    
+    // Open the file containing event names and details
     fp = fopen("Events.txt", "r");
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
     }
+
+    // Display the list of events
     system("cls");
     printf("Events:\n");
     while(fgets(line, sizeof(line), fp)){
@@ -282,25 +297,29 @@ void viewEvent(){
         strcpy(eventName[countEvents], admin.eventName);
         countEvents++;
     }
-
     fclose(fp);
-    chdir(workingDir);
+    chdir(workingDir);      // Go back to the root folder of the project
+
     printf("\t%d. Exit\nEnter Option: ", (countEvents + 1));
     scanf("%d", &choice);
+
     if(choice == (countEvents + 1)){
         return;
     }
     system("cls");
 
+    // Display details of the selected event
     for(int x = 0; x < countEvents; x++){
         if(x == (choice - 1)){
             char fileName[256];
             sprintf(fileName, "%s.csv", eventName[x]);
             fp = fopen(fileName, "r");
+
+            // Read and display event details from the CSV file
             while(fgets(line, sizeof(line), fp)){
                 if(firstLine){
                     firstLine = 0;
-                    continue;
+                    continue;   // Skip the first line (header) of the CSV file
                 }
                 else {
                     sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
@@ -313,7 +332,7 @@ void viewEvent(){
                 }
             }
             fclose(fp);
-            break;
+            break;  // Exit the loop after displaying details for the selected event
         }
     }
 }
@@ -330,12 +349,14 @@ void deleteEvent(){
 
     system("cls"); 
     // Display all events with their numbers
-    fp = fopen("Events.txt", "r");
+    fp = fopen("Events.txt", "r");      // Open the file for reading
     if(fp == NULL){
         printf("Failed to open file\n");
         return;
     }
+
     while(fgets(line, sizeof(line), fp)){
+        // Extract event details from the line and display event number and name
         sscanf(line, "%[^,],%[^,],%d/%d/%d,%d:%d,%d:%d", admin.eventName, admin.eventAddress, &admin.month, &admin.day, &admin.year, &admin.hour[0], &admin.min[0], &admin.hour[1], &admin.min[1]);
         printf("%d. %s\n", ++i, admin.eventName);
     }
@@ -345,7 +366,6 @@ void deleteEvent(){
     printf("Enter the name or the number of the event to delete: ");
     if(scanf("%d", &eventNumber) == 1){
         // The admin entered a number
-
         DIR *dir;
         int i;
         struct dirent *entry;
@@ -362,7 +382,6 @@ void deleteEvent(){
                 const char *dot = strrchr(entry->d_name, '.');
                 if(dot && strcmp(dot, ".csv") == 0){
                     size_t length = dot - entry->d_name;
-                    // printf("%d\t%.*s\n", i, (int)length, entry->d_name);
                     remove(entry->d_name);
                     break;
                     i++;
@@ -371,6 +390,7 @@ void deleteEvent(){
         }
         closedir(dir);
 
+        // Open Events.txt file, create a temporary file, and copy non-deleted events to the temporary file
         fp = fopen("Events.txt", "r");
         FILE *temp = fopen("temp.txt", "w");
         i = 0;
@@ -399,7 +419,6 @@ void deleteEvent(){
         fclose(fp);
         fclose(temp);
     }
-
     // Delete the old file and rename the temporary file
     remove("Events.txt");
     rename("temp.txt", "Events.txt");
@@ -432,7 +451,6 @@ void editEvent() {
     }
     fclose(fp);
 
-    
     // Ask the admin to enter either the name or the number of the event to edit
     printf("Enter the name or the number of the event to edit: ");
     chdir(workingDir);
@@ -446,6 +464,7 @@ void editEvent() {
             exit(EXIT_FAILURE);
         }
 
+        // Traverse to directory and find the files that matches the file chosen
         while((entry = readdir(dir)) != NULL){
             if(entry->d_type == DT_REG){
                 const char *dot = strrchr(entry->d_name, '.');
@@ -603,65 +622,72 @@ void adminMain(){
     }while(choice != 0);
 }
 
-// Choose between Admin and User
-int chooseMode(){
-    int choice;
-    printf("\nChoose Mode:\n");
-    printf("\t1. Admin\n");
-    printf("\t2. User\n");
-    printf("\t0. Exit\n");
-    printf("Enter your choice: ");
-    scanf("%d", &choice);
-    return choice;
-}
-
 // Control Functions for User
+// User Menu
+void userMenu(){
+    int again = 1;
+    int choice;
+    do
+    {
+        displayEvents();
+        choice = selectEvent();
+        inputUserDetails(choice);
+        again = getUserChoice();
+        if (again == 1){
+            system("cls");
+        }
+        if (again == 0){
+            printf("\nThank you for using our system!\n");
+        }
+    } while (again == 1);
+}
+// Function to display events
 void displayEvents(){
     int i;
     struct dirent *entry;
 
-    dir = opendir(workingDir);
+    // Open the directory
+    dir = opendir(workingDir); 
     if(dir == NULL){
         perror("Unable to open directory!");;
         exit(EXIT_FAILURE);
     }
-
     printf("\nEvents that are accessible:\n\n", workingDir);
     i = 1;
+    // Loop through directory entries
     while((entry = readdir(dir)) != NULL){
+        // This will check if the file has a '.csv' extension
         if(entry->d_type == DT_REG){
             const char *dot = strrchr(entry->d_name, '.');
             if(dot && strcmp(dot, ".csv") == 0){
                 size_t length = dot - entry->d_name;
+                // Print the file name without the extension
                 printf("%d\t%.*s\n", i, (int)length, entry->d_name);
                 i++;
             }
         }
     }
-    printf("0\tExit\n\n");
+    printf("0\tExit\n\n");    // Display the option to exit
     closedir(dir);
 }
-
+// This function returns the value of the chosen event
 int selectEvent(){
     int eventNum;
     printf("Select an event: ");
     scanf("%d", &eventNum);
     return eventNum;
 }
-
+// Function to generate code for user's receipt
 void generateCode(char *buffer) {
     srand(time(NULL));
-
     // Generate 3 random letters (A-Z)
     for (int i = 0; i < 3; i++) {
         buffer[i] = 'A' + rand() % 26;
     }
-
     // Generate 4 random numbers (0-9)
     for (int i = 3; i < 7; i++) {
         buffer[i] = '0' + rand() % 10;
     }
-
     // Null-terminate the string
     buffer[7] = '\0';
 }
@@ -673,11 +699,15 @@ void appendToFile(char *fileName, User *userDetails){
     if(dot != NULL){
         *dot = '\0';  // Remove the .csv extension
     }
+
+    // Open the csv file for appending
     FILE *file = fopen(fileName, "a+");
     if(file == NULL){
         printf("Unable to open file!");
         exit(EXIT_FAILURE);
     }
+
+    // Append user details to the CSV File
     fprintf(file, "\n%s,%d,%c,%s,%s,%s,%s", 
         userDetails->name,
         userDetails->age,
@@ -687,13 +717,16 @@ void appendToFile(char *fileName, User *userDetails){
         userDetails->emailAddr,
         userDetails->code
     );
+    // Flush the file buffer to ensure immediate write
     fflush(file);
     printf("\nSuccessfully appended to file\n");
     fclose(file);
 
+    // Generate a receipt file in the 'receipts' directory
     sprintf(fileName, "receipts/%s.txt", userDetails->name);
     file = fopen(fileName, "w");
 
+    // Write the user and event details to the receipt file
     fprintf(file, "=============================================================\n");
     fprintf(file, "Event Name: %s\n", eventName);  // Use the extracted event name
     fprintf(file, "Name: %s\n", userDetails->name);
@@ -704,39 +737,45 @@ void appendToFile(char *fileName, User *userDetails){
     fprintf(file, "Email Address: %s\n", userDetails->emailAddr);
     fprintf(file, "Ticket Number: %s\n", userDetails->code);
     fprintf(file, "=============================================================\n");
-
     fclose(file);
 }
 
+// This function checks if the given name is valid
 int isValidName(char *name) {
-    // Check if the name is not empty and only contains alphabetic characters.
+    // Checks if the name is not empty
     if (strlen(name) == 0) return 0;
+    // Check if the name only contains alphabetic characters or space.
     for (int i = 0; name[i]; i++) {
         if (!isalpha(name[i]) && name[i] != ' ') return 0;
     }
-    return 1;
+    return 1;   // Name is valid
 }
 
+// This function checks if the given age is valid
 int isValidAge(int age) {
     // Check if the age is between 1 and 120.
     return age >= 1 && age <= 120;
 }
 
+// Sex checker function
 int isValidSex(char sex) {
     // Check if the sex is 'M' or 'F' (case insensitive).
     return toupper(sex) == 'M' || toupper(sex) == 'F';
 }
 
+// Address checker function
 int isValidAddress(char *address) {
     // Check if the address is not empty and is less than 100 characters.
     return strlen(address) > 0 && strlen(address) < 100;
 }
 
+// Checks if the mobile entered is valid
 int isValidMobileNum(char *mobileNum) {
     // Check if the mobile number is 11 digits and starts with a valid prefix (e.g., '09').
     return strlen(mobileNum) == 11 && mobileNum[0] == '0' && mobileNum[1] == '9';
 }
 
+// Checks if the email entered is valid
 int isValidEmailAddr(char *emailAddr) {
     // Check if the email address contains '@' and '.'.
     char *atSign = strchr(emailAddr, '@');
@@ -744,22 +783,23 @@ int isValidEmailAddr(char *emailAddr) {
     return atSign != NULL && dot != NULL;
 }
 
+// This function is where the user will input their details
 void inputUserDetails(int choice){
-    
     int reEnter = 1;
 
     if(choice != 0){
-        char fileName[50];
-        DIR *dir = opendir(workingDir);
+        char fileName[50];                  // Buffer to store the selected event file name
+        DIR *dir = opendir(workingDir);     // Directory structure pointer
         struct dirent *entry;
-        int i = 1;
+        int i = 1;                          // Counter for event index
 
+         // Loop through directory entries to find the selected event file
         while((entry = readdir(dir)) != NULL){
             if(entry->d_type == DT_REG){
                 const char *dot = strrchr(entry->d_name, '.');
                 if(i == choice){
                     snprintf(fileName, sizeof(fileName), "%s%s", workingDir, entry->d_name);
-                    break;
+                    break;      // Stop when chosen event is found
                 }
                 i++;
             }
@@ -879,6 +919,7 @@ void inputUserDetails(int choice){
     }
 }
 
+// Function for getting the  choice of the user when adding participant
 int getUserChoice() {
     int again;
     int x = 0;
@@ -898,22 +939,3 @@ int getUserChoice() {
     } while (again != 1 && again != 0);
     return again;
 }
-
-void userMenu(){
-    int again = 1;
-    int choice;
-    do
-    {
-        displayEvents();
-        choice = selectEvent();
-        inputUserDetails(choice);
-        again = getUserChoice();
-        if (again == 1){
-            system("cls");
-        }
-        if (again == 0){
-            printf("\nThank you for using our system!\n");
-        }
-    } while (again == 1);
-}
-
