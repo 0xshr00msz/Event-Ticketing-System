@@ -346,8 +346,6 @@ void deleteEvent(){
     int found = 0; // Indicator whether the event was found
     int i = 0;
 
-    chdir(workingDir);
-
     system("cls"); 
     // Display all events with their numbers
     fp = fopen("Events.txt", "r");      // Open the file for reading
@@ -355,6 +353,7 @@ void deleteEvent(){
         printf("Failed to open file\n");
         return;
     }
+    chdir(workingDir);
 
     while(fgets(line, sizeof(line), fp)){
         // Extract event details from the line and display event number and name
@@ -390,7 +389,7 @@ void deleteEvent(){
             }
         }
         closedir(dir);
-
+        chdir("..");
         // Open Events.txt file, create a temporary file, and copy non-deleted events to the temporary file
         fp = fopen("Events.txt", "r");
         FILE *temp = fopen("temp.txt", "w");
@@ -404,6 +403,9 @@ void deleteEvent(){
         }
         fclose(fp);
         fclose(temp);
+        // Delete the old file and rename the temporary file
+        remove("Events.txt");
+        rename("temp.txt", "Events.txt");
     }else{
         // The admin entered a name
         scanf("%s", eventName);
@@ -420,9 +422,7 @@ void deleteEvent(){
         fclose(fp);
         fclose(temp);
     }
-    // Delete the old file and rename the temporary file
-    remove("Events.txt");
-    rename("temp.txt", "Events.txt");
+    
     system("cls");
     if(found){
         printf("Event deleted successfully\n\n");
